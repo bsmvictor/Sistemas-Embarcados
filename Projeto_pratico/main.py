@@ -1,107 +1,3 @@
-# from matplotlib import pyplot as plt
-# from identificacao_sistemas import identificacaoSistemas
-# from scipy.io import loadmat
-# from tkinter import filedialog
-# from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-# from matplotlib.figure import Figure
-# import control as ctrl
-# import customtkinter
-
-# data = None
-
-
-# def plot_data():
-#     global data
-
-#     if data is not None:
-#         # Extraindo entrada, saída e tempo
-#         step = data['TARGET_DATA____ProjetoC213_Degrau'][1]  # A segunda linha é a entrada
-#         output = data['TARGET_DATA____ProjetoC213_PotenciaMotor'][1]  # A segunda linha é a saída
-#         time = data['TARGET_DATA____ProjetoC213_Degrau'][0]  # A primeira linha é o tempo
-
-#         fig = Figure(figsize=(8, 4), dpi=100)
-#         ax = fig.add_subplot(111)
-
-#         # Identificação dos sistemas
-#         results = identificacaoSistemas(step, time, output, 'Smith')
-
-#         ax.figure(figsize=(12, 6))
-#         ax.plot(time, output, 'black', label='Resposta Real do Sistema')
-#         ax.plot(time, step, label='Entrada (Degrau)', color='blue')
-#         ax.plot(results.t_sim, results.y_modelo, 'r', label='Modelo Identificado (Smith) Malha Aberta')
-#         ax.title('Identificação da Planta pelo Método de Smith (Malha Aberta)')
-#         ax.xlabel('Tempo (s)')
-#         ax.ylabel('Potência do Motor')
-#         ax.legend()
-#         ax.grid()
-
-#         # Adicionando os parâmetros identificados no gráfico em uma caixa delimitada
-#         props = dict(boxstyle='round', facecolor='white', alpha=0.6)  # Estilo da caixa
-
-#         textstr = '\n'.join((
-#             f'Ganho (k): {results.k:.4f}',
-#             f'Tempo de Atraso (θ): {results.theta:.4f} s',
-#             f'Constante de Tempo (τ): {results.tau:.4f} s',
-#             f'(EQM): {results.EQM:.4f}'))
-
-#         # Posicionar a caixa com os resultados no gráfico
-#         ax.text(time[-1] * 0.77, max(output) * 0.7, textstr, fontsize=10, bbox=props)
-
-#         canvas = FigureCanvasTkAgg(fig, master=app)
-#         canvas.draw()
-#         canvas.get_tk_widget().grid()
-
-#         # Sundaresan -----------------------------------------------------------------
-#         results = identificacaoSistemas(step, time, output, 'Sundaresan')
-
-#         # 9. Visualização dos Resultados
-#         plt.figure(figsize=(12, 6))
-#         plt.plot(time, output, 'black', label='Resposta Real')
-#         plt.plot(time, step, label='Entrada (Degrau)', color='blue')
-#         plt.plot(results.t_sim, results.y_modelo, 'r', label='Modelo Identificado')
-#         plt.title('Identificação da Planta pelo Método de Sundaresan (Malha Aberta)')
-#         plt.xlabel('Tempo (s)')
-#         plt.ylabel('Potência do Motor')
-#         plt.legend()
-#         plt.grid()
-#         plt.tight_layout()
-
-#         # Adicionando os parâmetros identificados no gráfico em uma caixa delimitada
-#         props = dict(boxstyle='round', facecolor='white', alpha=0.6)  # Estilo da caixa
-
-#         textstr = '\n'.join((
-#             f'Ganho (k): {results.k:.4f}',
-#             f'Tempo de Atraso (θ): {results.theta:.4f} s',
-#             f'Constante de Tempo (τ): {results.tau:.4f} s',
-#             f'(EQM): {results.EQM:.4f}'))
-
-#         # Posicionar a caixa com os resultados no gráfico
-#         plt.text(time[-1] * 0.77, max(output) * 0.7, textstr, fontsize=10, bbox=props)
-
-#         plt.show()
-
-# def select_file():
-#     global data
-
-#     path_file = filedialog.askopenfilename(title='Selecione o arquivo .mat')
-
-#     if path_file:
-#         data = loadmat(path_file)
-#         label.configure(text="Arquivo .mat selecionado com sucesso!")
-#         plot_data()
-
-
-# app = customtkinter.CTk()
-# app.geometry('800x600')
-
-# button = customtkinter.CTkButton(app, text='Selecionar arquivo .mat', command=select_file)
-# button.grid(pady=20)
-
-# label = customtkinter.CTkLabel(app, text='Clique no botão para selecionar o arquivo .mat')
-# label.grid()
-
-# app.mainloop()
-
 import customtkinter as ctk
 from tkinter import filedialog
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -110,6 +6,7 @@ from scipy.io import loadmat
 from Projeto_pratico.identificacao_sistemas import identificacaoSistemas
 
 data = None
+comparison_result = None
 selected_method = None
 selected_control = None
 
@@ -122,6 +19,8 @@ def select_file():
         plot_graphs_initial()  # Gerar os gráficos dos métodos Smith e Sundaresan
 
 def plot_graphs_initial():
+    global comparison_result
+
     if data is not None:
         # Extraindo entrada, saída e tempo
         step = data['TARGET_DATA____ProjetoC213_Degrau'][1]  # A segunda linha é a entrada
@@ -141,7 +40,7 @@ def plot_graphs_initial():
         ax1.plot(time, step, label='Entrada (Degrau)', color='blue')
         ax1.plot(results_smith['t_sim'], results_smith['y_modelo'], 'r',
         label='Modelo Identificado (Smith) Malha Aberta')
-        
+
         # Definindo título e labels dos eixos
         ax1.set_title('Método de Smith (Malha Aberta)', fontsize=10)
         ax1.set_xlabel('Tempo (s)')
@@ -185,7 +84,7 @@ def plot_graphs_initial():
         # Adicionando os parâmetros identificados no gráfico em uma caixa delimitada
         props = dict(boxstyle='round', facecolor='white', alpha=0.6)
 
-        textstr = '\n'.join((
+        textstr = '\n'.join(( 
             f'Ganho (k): {results_sundaresan["k"]:.4f}',
             f'Tempo de Atraso (θ): {results_sundaresan["theta"]:.4f} s',
             f'Constante de Tempo (τ): {results_sundaresan["tau"]:.4f} s',
@@ -210,22 +109,87 @@ def plot_graphs_initial():
         # Comparação dos EQMs
         if results_smith['EQM'] < results_sundaresan['EQM']:
             comparison_result = 'Smith'
-            result_label.configure(text='Smith é mais adequado', font=("Arial", 16))
+            result_label.configure(text='Smith é mais adequado', font=("Arial", 18))
         else:
             comparison_result = 'Sundaresan'
-            result_label.configure(text='Sundaresan é mais adequado', font=("Arial", 16))
+            result_label.configure(text='Sundaresan é mais adequado', font=("Arial", 18))
 
         result_label.pack(pady=10)  # Usando pack para posicionar a label abaixo dos gráficos
 
-def select_method(method):
-    global selected_method
-    selected_method = method
-    label_method.configure(text=f"Método selecionado: {method}")
+        plot_graphs_method()
 
-def select_control(control):
-    global selected_control
-    selected_control = control
-    label_control.configure(text=f"Controle: {control}")
+def plot_graphs_method():
+    global comparison_result
+
+    if data is not None and comparison_result is not None:
+        
+        # Extraindo entrada, saída e tempo
+        step = data['TARGET_DATA____ProjetoC213_Degrau'][1]  # A segunda linha é a entrada
+        output = data['TARGET_DATA____ProjetoC213_PotenciaMotor'][1]  # A segunda linha é a saída
+        time = data['TARGET_DATA____ProjetoC213_Degrau'][0]  # A primeira linha é o tempo
+
+        result_opened = identificacaoSistemas(step, time, output, comparison_result, 'Opened')
+        result_closed = identificacaoSistemas(step, time, output, comparison_result, 'Closed')
+
+        fig = Figure(figsize=(8, 4), dpi=100)
+        ax = fig.add_subplot(111)
+
+        ax.plot(result_opened['t_sim'], result_opened['y_modelo'], 'r', label=f'Modelo Identificado {comparison_result} Malha Aberta')
+        ax.plot(result_closed['t_sim'], result_closed['y_modelo'], 'b', label=f'Modelo Identificado {comparison_result} Malha Fechada')
+
+        # Definindo título e labels dos eixos
+        ax.set_title(f'Comparação entre Malha Aberta e Fechada ({comparison_result})', fontsize=10)
+        ax.set_xlabel('Tempo (s)')
+        ax.set_ylabel('Potência do Motor')
+
+        # Exibindo a legenda e grid
+        ax.legend(loc='lower right', fontsize=8)
+        ax.grid()
+
+        # Adicionando os parâmetros identificados no gráfico em uma caixa delimitada
+        props = dict(boxstyle='round', facecolor='white', alpha=0.6)
+
+        textstr = '\n'.join((
+            f'Tempo de subida (Malha Aberta): {result_opened['info']['RiseTime']:.4f} s',
+            f'Tempo de acomodação (Malha Aberta): {result_opened['info']['SettlingTime']:.4f} s',
+            f'Valor final(pico) (Malha Aberta): {result_opened['info']['Peak']:.4f}\n',
+            f'Tempo de subida (Malha Fechada): {result_closed['info']['RiseTime']:.4f} s',
+            f'Tempo de acomodação (Malha Fechada): {result_closed['info']['SettlingTime']:.4f} s',
+            f'Valor final(pico) (Malha Fechada): {result_closed['info']['Peak']:.4f}'))
+
+        # Posicionar a caixa de parâmetros no centro verticalmente e na direita horizontalmente
+        ax.text(0.95, 0.5, textstr, transform=ax.transAxes, fontsize=8, verticalalignment='center', horizontalalignment='right', bbox=props)
+
+        # Limpar gráficos anteriores
+        for widget in frame_method_plots.winfo_children():
+            widget.destroy()
+
+        # Display gráfico do método de Smith na esquerda
+        canvas = FigureCanvasTkAgg(fig, master=frame_method_plots)
+        canvas.get_tk_widget().pack(fill='both', expand=True, padx=10)
+
+        # Comparação entre os sistemas em malha aberta e fechada
+        print('\nComparação entre Resposta do Sistema em Malha Aberta e Fechada:\n')
+
+        if result_opened['info']['RiseTime'] < result_closed['info']['RiseTime']:
+            rise_time_label.configure(text='O sistema em malha aberta tem menor tempo de subida.', font=("Arial", 16))
+        else:
+            rise_time_label.configure(text='O sistema em malha fechada tem menor tempo de subida.', font=("Arial", 16))
+
+        if result_opened['info']['SettlingTime'] < result_closed['info']['SettlingTime']:
+            settling_time_label.configure(text='O sistema em malha aberta tem menor tempo de acomodação.', font=("Arial", 16))
+        else:
+            settling_time_label.configure(text='O sistema em malha fechada tem menor tempo de acomodação.', font=("Arial", 16))
+
+        if result_opened['info']['Peak'] > result_closed['info']['Peak']:
+            peak_label.configure(text='O sistema em malha aberta tem maior valor final (pico).', font=("Arial", 16))
+        else:
+            peak_label.configure(text='O sistema em malha aberta tem maior valor final (pico).', font=("Arial", 16))
+
+        # Exibindo os resultados
+        eqm_opened_label.configure(text=f'\nErro Quadrático Médio (EQM) para Malha Aberta: {result_opened['EQM']:.4f}', font=("Arial", 16))
+        eqm_closed_label.configure(text=f'\nErro Quadrático Médio (EQM) para Malha Fechada: {result_closed['EQM']:.4f}', font=("Arial", 16))
+
 
 def switch_screen(screen):
     frame_initial.pack_forget()
@@ -245,7 +209,7 @@ sidebar.pack(side='right', fill='y')
 button_to_initial = ctk.CTkButton(sidebar, text='Tela Inicial', command=lambda: switch_screen(frame_initial))
 button_to_initial.pack(pady=10)
 
-button_to_comparisons = ctk.CTkButton(sidebar, text='Definir Método', command=lambda: switch_screen(frame_comparisons))
+button_to_comparisons = ctk.CTkButton(sidebar, text='Análise - Método', command=lambda: switch_screen(frame_comparisons))
 button_to_comparisons.pack(pady=10)
 
 button_to_advanced = ctk.CTkButton(sidebar, text='Definir Controle', command=lambda: switch_screen(frame_advanced))
@@ -275,32 +239,27 @@ result_label = ctk.CTkLabel(frame_initial, text="")
 result_label.pack(side="top", pady=10)  # Posicionado abaixo dos gráficos
 
 # Tela de Comparações - Seleção de métodos e tipo de controle
-label_method = ctk.CTkLabel(frame_comparisons, text="Selecione o método:")
-label_method.pack(pady=10)
+frame_method_plots = ctk.CTkFrame(frame_comparisons)
+frame_method_plots.pack(fill='both', expand=True, padx=20, pady=20)
 
-method_select = ctk.CTkComboBox(frame_comparisons, values=['Smith', 'Sundaresan'], command=select_method)
-method_select.pack(pady=10)
+rise_time_label = ctk.CTkLabel(frame_comparisons)
+rise_time_label.pack(side='top')
 
-label_control = ctk.CTkLabel(frame_comparisons, text="Selecione o tipo de controle:")
-label_control.pack(pady=10)
+settling_time_label = ctk.CTkLabel(frame_comparisons)
+settling_time_label.pack(side='top')
 
-control_select = ctk.CTkComboBox(frame_comparisons, values=['Malha Aberta', 'Malha Fechada'], command=select_control)
-control_select.pack(pady=10)
+peak_label = ctk.CTkLabel(frame_comparisons)
+peak_label.pack(side='top')
 
-button_compare = ctk.CTkButton(frame_comparisons, text="Gerar Comparações", command=plot_graphs_initial)
-button_compare.pack(pady=20)
+eqm_opened_label = ctk.CTkLabel(frame_comparisons)
+eqm_opened_label.pack(side='top')
 
-button_advanced = ctk.CTkButton(frame_comparisons, text="Ir para Controle Avançado", command=lambda: switch_screen(frame_advanced))
-button_advanced.pack(pady=20)
+eqm_closed_label = ctk.CTkLabel(frame_comparisons)
+eqm_closed_label.pack(side='top')
 
 # Tela de Controle Avançado - Seleção de métodos de controle
 label_advanced = ctk.CTkLabel(frame_advanced, text="Escolha o método avançado:")
 label_advanced.pack(pady=10)
-
-method_select_advanced = ctk.CTkComboBox(frame_advanced, values=[
-    'Ziegler Nichols', 'IMC', 'CHR sem Sobrevalor', 'CHR com Sobrevalor',
-    'Cohen e Coon', 'ITAE'], command=select_method)
-method_select_advanced.pack(pady=10)
 
 button_generate = ctk.CTkButton(frame_advanced, text="Gerar Gráfico", command=plot_graphs_initial)
 button_generate.pack(pady=20)
