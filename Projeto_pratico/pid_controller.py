@@ -2,45 +2,53 @@ import control as ctrl
 from matplotlib import pyplot as plt
 
 
-def pid_controller (k, tau, theta, result_estimated_model, step_amp ,pid = 'Nenhum'):
-    '''
-       Identifies control systems using the Smith or Sundaresan methods based on
-       test data, considering a first-order model with transport delay (FOPDT).
+def pid_controller(k, tau, theta, result_estimated_model, step_amp, pid='Nenhum'):
+    """
+    Implements a PID controller based on various tuning methods, including Ziegler-Nichols,
+    IMC, CHR, Cohen and Coon, and ITAE, and applies it to a first-order model with transport delay.
 
-       Args:
-         - step (float): Amplitude of the input step. Must be a finite, non-zero number.
-         - time (array-like): Sampling time points of the process. Must be non-empty.
-         - output (array-like): Output samples of the process at the given sampling times. Must be non-empty.
-         - method (str): Identification method to be used: 'Smith' (default) or 'Sundaresan'. Must be a valid string.
+    Args:
+        - k (float): System gain.
+        - tau (float): Time constant of the system.
+        - theta (float): Transport delay of the system.
+        - result_estimated_model (TransferFunction): Identified transfer function of the system.
+        - step_amp (float): Amplitude of the input step.
+        - pid (str): PID tuning method to be applied. Default is 'Nenhum' (no controller).
 
-       Returns:
-         - dict: Structure containing the identified system parameters.
-    '''
+    Returns:
+        dict or str: If 'Nenhum' is selected, a message indicating no PID is returned.
+                     Otherwise, a dictionary containing:
+                     - result_time (array-like): Time points for the step response of the system.
+                     - result_model (array-like): Step response data of the system.
+                     - response_info (dict): Step response characteristics.
+                     - title (str): Title describing the PID tuning method used.
+    """
 
     if pid == 'Nenhum':
         return 'PID controller not defined'
 
+    # Ziegler-Nichols method for open-loop systems
     if pid == 'Ziegler Nichols Malha Aberta':
         kp = (1.2 * tau) / (k * theta)
         ti = 2 * theta
         td = 0.5 * theta
 
-        # 7. função do PID
         def funcao_PID(kp, ti, td):
+            # PID transfer function
             pid = ctrl.tf([kp * td, kp, kp / ti], [1, 0])
             return pid
 
         PID = funcao_PID(kp, ti, td)
 
-        # Sistema em malha fechada com controlador PID e modelo identificado
+        # Closed-loop system with PID controller
         system_closed_mesh = ctrl.feedback(ctrl.series(PID, result_estimated_model))
 
-        # Simulação da resposta ao degrau
+        # Step response simulation
         result_time, result_model = ctrl.step_response(system_closed_mesh)
 
         response_info = ctrl.step_info(system_closed_mesh)
 
-        title = 'Zigler Nichols\n Sistema rápido, com overshoot'
+        title = 'Ziegler Nichols\n Sistema rápido, com overshoot'
 
         return {
             'result_time': result_time,
@@ -49,25 +57,21 @@ def pid_controller (k, tau, theta, result_estimated_model, step_amp ,pid = 'Nenh
             'title': title
         }
 
-
+    # Internal Model Control (IMC) method
     if pid == 'IMC':
-        # Calculando os valores de kp, ti e td
         lamb = 20
         kp = ((2 * tau) + theta) / (k * ((2 * lamb) + theta))
         ti = tau + (theta / 2)
         td = (tau * theta) / ((2 * tau) + theta)
 
-        # 7. função do PID
         def function_pid(kp, ti, td):
             pid = ctrl.tf([kp * td, kp, kp / ti], [1, 0])
             return pid
 
         PID = function_pid(kp, ti, td)
 
-        # Sistema em malha fechada com controlador PID e modelo identificado
         system_closed_mesh = ctrl.feedback(ctrl.series(PID, result_estimated_model))
 
-        # Simulação da resposta ao degrau
         result_time, result_model = ctrl.step_response(system_closed_mesh)
 
         response_info = ctrl.step_info(system_closed_mesh)
@@ -81,23 +85,20 @@ def pid_controller (k, tau, theta, result_estimated_model, step_amp ,pid = 'Nenh
             'title': title
         }
 
+    # CHR method without overshoot
     if pid == 'CHR sem Sobrevalor':
-        # Calculando os valores de kp, ti e td
         kp = (0.6 * tau) / (k * theta)
         ti = tau
         td = 0.5 * theta
 
-        # 7. função do PID
         def funcao_PID(kp, ti, td):
             pid = ctrl.tf([kp * td, kp, kp / ti], [1, 0])
             return pid
 
         PID = funcao_PID(kp, ti, td)
 
-        # Sistema em malha fechada com controlador PID e modelo identificado
         system_closed_mesh = ctrl.feedback(ctrl.series(PID, result_estimated_model))
 
-        # Simulação da resposta ao degrau
         result_time, result_model = ctrl.step_response(system_closed_mesh)
 
         response_info = ctrl.step_info(system_closed_mesh)
@@ -111,23 +112,20 @@ def pid_controller (k, tau, theta, result_estimated_model, step_amp ,pid = 'Nenh
             'title': title
         }
 
+    # CHR method with overshoot
     if pid == 'CHR com Sobrevalor':
-        # Calculando os valores de kp, ti e td
         kp = (0.95 * tau) / (k * theta)
         ti = 1.357 * tau
         td = 0.473 * theta
 
-        # 7. função do PID
         def funcao_PID(kp, ti, td):
             pid = ctrl.tf([kp * td, kp, kp / ti], [1, 0])
             return pid
 
         PID = funcao_PID(kp, ti, td)
 
-        # Sistema em malha fechada com controlador PID e modelo identificado
         system_closed_mesh = ctrl.feedback(ctrl.series(PID, result_estimated_model))
 
-        # Simulação da resposta ao degrau
         result_time, result_model = ctrl.step_response(system_closed_mesh)
 
         response_info = ctrl.step_info(system_closed_mesh)
@@ -141,27 +139,25 @@ def pid_controller (k, tau, theta, result_estimated_model, step_amp ,pid = 'Nenh
             'title': title
         }
 
+    # Cohen and Coon method
     if pid == 'Cohen e Coon':
         kp = (tau / (k * theta)) * ((16 * tau + 3 * theta) / (12 * tau))
         ti = theta * ((32 + (6 * theta / tau)) / (13 + (8 * theta / tau)))
         td = (4 * theta) / (11 + (2 * theta / tau))
 
-        # 7. função do PID
         def funcao_PID(kp, ti, td):
             pid = ctrl.tf([kp * td, kp, kp / ti], [1, 0])
             return pid
 
         PID = funcao_PID(kp, ti, td)
 
-        # Sistema em malha fechada com controlador PID e modelo identificado
         system_closed_mesh = ctrl.feedback(ctrl.series(PID, result_estimated_model))
 
-        # Simulação da resposta ao degrau
         result_time, result_model = ctrl.step_response(system_closed_mesh)
 
         response_info = ctrl.step_info(system_closed_mesh)
 
-        title = 'Coheen e Coon'
+        title = 'Cohen e Coon'
 
         return {
             'result_time': result_time,
@@ -170,6 +166,7 @@ def pid_controller (k, tau, theta, result_estimated_model, step_amp ,pid = 'Nenh
             'title': title
         }
 
+    # ITAE method
     if pid == 'ITAE':
         A = 0.965
         B = -0.85
@@ -178,21 +175,18 @@ def pid_controller (k, tau, theta, result_estimated_model, step_amp ,pid = 'Nenh
         E = 0.308
         F = 0.929
 
-        kp = (A/k) * (theta/tau)**B
-        ti = (tau/(C + D*(theta/tau)))
-        td = tau * E * (theta/tau)**F
+        kp = (A / k) * (theta / tau) ** B
+        ti = tau / (C + D * (theta / tau))
+        td = tau * E * (theta / tau) ** F
 
-        # 7. função do PID
         def funcao_PID(kp, ti, td):
             pid = ctrl.tf([kp * td, kp, kp / ti], [1, 0])
             return pid
 
         PID = funcao_PID(kp, ti, td)
 
-        # Sistema em malha fechada com controlador PID e modelo identificado
         system_closed_mesh = ctrl.feedback(ctrl.series(PID, result_estimated_model))
 
-        # Simulação da resposta ao degrau
         result_time, result_model = ctrl.step_response(system_closed_mesh)
 
         response_info = ctrl.step_info(system_closed_mesh)
