@@ -5,7 +5,7 @@ O projeto busca criar um sistema de controle para ajustar a velocidade de um mot
 O principal desafio é o atraso de propagação dos sinais de controle, que pode gerar instabilidade e oscilações indesejadas na velocidade, afetando a precisão do sistema.
 
 ### Team
- - Victor Boaventura - XXXX - GEC
+ - Victor Boaventura - 1807 - GEC
  - Yves Ribeiro - 1792 - GEC
 
 ## Pré requisitos 
