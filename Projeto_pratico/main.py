@@ -1,5 +1,5 @@
 import customtkinter as ctk
-from tkinter import filedialog
+from tkinter import filedialog, Frame, Label
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from scipy.io import loadmat
@@ -228,31 +228,50 @@ def plot_graphs_method():
         canvas.get_tk_widget().pack(fill='both', expand=True, padx=10)
 
         save_graph(fig, f'comparacao_aberta_fechada')
+        
+        # Criando os frames para cada fileira de 3 itens
+        row1 = Frame(frame_method_plots)
+        row1.pack(fill="x", pady=5, padx=10)  # pack horizontalmente (fileira)
 
-        # Comparação entre os sistemas em malha aberta e fechada
+        row2 = Frame(frame_method_plots)
+        row2.pack(fill="x", pady=5, padx=10)
 
+        # Labels da primeira fileira
+        rise_time_label = Label(row1, text="...", font=("Arial", 12))
+        rise_time_label.pack()
+
+        settling_time_label = Label(row1, text="...", font=("Arial", 12))
+        settling_time_label.pack()
+
+        peak_label = Label(row1, text="...", font=("Arial", 12))
+        peak_label.pack()
+
+        # Labels da segunda fileira
+        eqm_opened_label = Label(row2, text="...", font=("Arial", 12))
+        eqm_opened_label.pack(side="top")
+
+        eqm_closed_label = Label(row2, text="...", font=("Arial", 12))
+        eqm_closed_label.pack(side="bottom")
+
+        # Use o código de lógica que você já possui para atualizar os textos dos labels
         if result_opened['response_info']['RiseTime'] < result_closed['response_info']['RiseTime']:
-            rise_time_label.configure(text='O sistema em malha aberta tem menor tempo de subida.', font=("Arial", 16))
+            rise_time_label.configure(text='O sistema em malha aberta tem menor tempo de subida.')
         else:
-            rise_time_label.configure(text='O sistema em malha fechada tem menor tempo de subida.', font=("Arial", 16))
+            rise_time_label.configure(text='O sistema em malha fechada tem menor tempo de subida.')
 
         if result_opened['response_info']['SettlingTime'] < result_closed['response_info']['SettlingTime']:
-            settling_time_label.configure(text='O sistema em malha aberta tem menor tempo de acomodação.',
-                                          font=("Arial", 16))
+            settling_time_label.configure(text='O sistema em malha aberta tem menor tempo de acomodação.')
         else:
-            settling_time_label.configure(text='O sistema em malha fechada tem menor tempo de acomodação.',
-                                          font=("Arial", 16))
+            settling_time_label.configure(text='O sistema em malha fechada tem menor tempo de acomodação.')
 
         if result_opened['response_info']['Peak'] > result_closed['response_info']['Peak']:
-            peak_label.configure(text='O sistema em malha aberta tem maior valor final (pico).', font=("Arial", 16))
+            peak_label.configure(text='O sistema em malha aberta tem maior valor final (pico).')
         else:
-            peak_label.configure(text='O sistema em malha aberta tem maior valor final (pico).', font=("Arial", 16))
+            peak_label.configure(text='O sistema em malha aberta tem maior valor final (pico).')
 
-        # Exibindo os resultados
-        eqm_opened_label.configure(text=f'\nErro Quadrático Médio (EQM) para Malha Aberta: {result_opened['MSE']:.4f}',
-                                   font=("Arial", 16))
-        eqm_closed_label.configure(text=f'\nErro Quadrático Médio (EQM) para Malha Fechada: {result_closed['MSE']:.4f}',
-                                   font=("Arial", 16))
+        # Exibindo os resultados de EQM
+        eqm_opened_label.configure(text=f'Erro Quadrático Médio (EQM) para Malha Aberta: {result_opened["MSE"]:.4f}')
+        eqm_closed_label.configure(text=f'Erro Quadrático Médio (EQM) para Malha Fechada: {result_closed["MSE"]:.4f}')
 
 
 def plot_graphs_pid():
@@ -403,8 +422,6 @@ def plot_graphs_pid():
         canvas3.get_tk_widget().pack(side='left', padx=10)
 
 
-
-
 # Função para processar a escolha do método PID
 def select_pid_method_1(value):
     global selected_method_1
@@ -479,21 +496,6 @@ result_label.pack(side="top", pady=10)  # Posicionado abaixo dos gráficos
 # Tela de Comparações - Seleção de métodos e tipo de controle
 frame_method_plots = ctk.CTkFrame(frame_comparisons)
 frame_method_plots.pack(fill='both', expand=True, padx=20, pady=20)
-
-rise_time_label = ctk.CTkLabel(frame_comparisons)
-rise_time_label.pack(side='top')
-
-settling_time_label = ctk.CTkLabel(frame_comparisons)
-settling_time_label.pack(side='top')
-
-peak_label = ctk.CTkLabel(frame_comparisons)
-peak_label.pack(side='top')
-
-eqm_opened_label = ctk.CTkLabel(frame_comparisons)
-eqm_opened_label.pack(side='top')
-
-eqm_closed_label = ctk.CTkLabel(frame_comparisons)
-eqm_closed_label.pack(side='top')
 
 # Tela de Controle Avançado - Seleção de métodos de controle
 # Opções de métodos de controle PID
