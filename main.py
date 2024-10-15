@@ -3,10 +3,11 @@ from tkinter import filedialog, Frame, Label
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from scipy.io import loadmat
-from Projeto_pratico.method_smith import method_smith
-from Projeto_pratico.method_sundaresan import method_sundaresan
-from Projeto_pratico.pid_controller import pid_controller
-from Projeto_pratico.sys_identification import system_identification
+import numpy as np
+from method_smith import method_smith
+from method_sundaresan import method_sundaresan
+from pid_controller import pid_controller
+from sys_identification import system_identification
 
 # Global variables to hold data and results
 data = None
@@ -15,9 +16,16 @@ selected_method = None
 selected_control = None
 result_closed = None
 result_opened = None
+
+# Global variables to hold the selected PID methods
 selected_method_1 = 'Nenhum'
 selected_method_2 = 'Nenhum'
 selected_method_3 = 'Nenhum'
+
+# Variables to hold the input, output, and time data
+step = None
+output = None
+time = None
 
 # Variables for system identification results
 identification_smith = None
@@ -39,11 +47,34 @@ def select_file():
     Opens a file dialog to select a .mat file and loads the data for processing.
     '''
     global data
+    global step
+    global output
+    global time
+
     path_file = filedialog.askopenfilename(title='Selecione o arquivo .mat')  # Open file dialog
     file_name = path_file.split('/')[-1]  # Extract the filename from the path
     if path_file:  # If a file is selected
         data = loadmat(path_file)  # Load the .mat file
         label.configure(text=f"Arquivo {file_name} selecionado com sucesso!")  # Update label with success message
+
+        # Supondo que 'data' seja um dicionário contendo seus dados
+        TARGET_DATA____ProjetoC213_Degrau = data['TARGET_DATA____ProjetoC213_Degrau']
+        TARGET_DATA____ProjetoC213_PotenciaMotor = data['TARGET_DATA____ProjetoC213_PotenciaMotor']
+
+        # Verifica o formato (linhas, colunas) dos dados
+        lines, columns = np.shape(TARGET_DATA____ProjetoC213_Degrau)
+
+        if lines < columns:
+            # Caso com mais colunas do que linhas (dados organizados como [2, N])
+            time = TARGET_DATA____ProjetoC213_Degrau[0, :]  # Primeira linha é o tempo
+            step = TARGET_DATA____ProjetoC213_Degrau[1, :]  # Segunda linha é o degrau (step)
+            output = TARGET_DATA____ProjetoC213_PotenciaMotor[1, :]  # Segunda linha da saída (potência)
+        else:
+            # Caso com mais linhas do que colunas (dados organizados como [N, 2])
+            time = TARGET_DATA____ProjetoC213_Degrau[:, 0]  # Primeira coluna é o tempo
+            step = TARGET_DATA____ProjetoC213_Degrau[:, 1]  # Segunda coluna é o degrau (step)
+            output = TARGET_DATA____ProjetoC213_PotenciaMotor[:, 1]  # Segunda coluna da saída (potência)
+
         plot_graphs_initial()  # Generate initial graphs for the Smith and Sundaresan methods
 
 def plot_graphs_initial():
@@ -54,11 +85,11 @@ def plot_graphs_initial():
     global identification_smith
     global identification_sundaresan
 
+    global step
+    global output
+    global time
+
     if data is not None:  # Check if data is loaded
-        # Extract input, output, and time from data
-        step = data['TARGET_DATA____ProjetoC213_Degrau'][1]  # Input step (2nd row)
-        output = data['TARGET_DATA____ProjetoC213_PotenciaMotor'][1]  # Output (2nd row)
-        time = data['TARGET_DATA____ProjetoC213_Degrau'][0]  # Time (1st row)
 
         # Identify system using Smith and Sundaresan methods
         identification_smith = system_identification(step, time, output, 'Smith')
@@ -72,10 +103,7 @@ def plot_graphs_initial():
         results_sundaresan = method_sundaresan(step, time, output,
                                                identification_sundaresan['k'], identification_sundaresan['tau'],
                                                identification_sundaresan['theta'])
-
-        print(identification_smith)  # Print identification results for debugging
-        print(identification_sundaresan)  # Print identification results for debugging
-
+        
         # Graph 1: Smith Method
         fig1 = Figure(figsize=(5.5, 5), dpi=100)  # Create a new figure
         ax1 = fig1.add_subplot(111)  # Add a subplot
@@ -178,13 +206,13 @@ def plot_graphs_method():
     global result_closed
     global result_opened
 
+    global step
+    global output
+    global time
+
     # Check if data and comparison results are available
     if data is not None and comparison_result is not None:
 
-        # Extract input, output, and time
-        step = data['TARGET_DATA____ProjetoC213_Degrau'][1]
-        output = data['TARGET_DATA____ProjetoC213_PotenciaMotor'][1]
-        time = data['TARGET_DATA____ProjetoC213_Degrau'][0]
 
         # Process results based on comparison method
         if comparison_result == 'Smith':
@@ -222,7 +250,7 @@ def plot_graphs_method():
                 label=f'Identified Model {comparison_result} Closed Loop')
 
         # Set title and axis labels
-        ax.set_title(f'Comparison between Open Loop and Closed Loop ({comparison_result})', fontsize=10)
+        ax.set_title(f'Comparação entre MALHA ABERTA e FECHADA ({comparison_result})', fontsize=10)
         ax.set_xlabel('Time (s)')
         ax.set_ylabel('Motor Power')
 
@@ -235,12 +263,12 @@ def plot_graphs_method():
 
         # Text with performance information of the methods
         textstr = '\n'.join((
-            f'Rise Time (Open Loop): {result_opened["response_info"]["RiseTime"]:.4f} s',
-            f'Settling Time (Open Loop): {result_opened["response_info"]["SettlingTime"]:.4f} s',
-            f'Final Value (Peak) (Open Loop): {result_opened["response_info"]["Peak"]:.4f}\n',
-            f'Rise Time (Closed Loop): {result_closed["response_info"]["RiseTime"]:.4f} s',
-            f'Settling Time (Closed Loop): {result_closed["response_info"]["SettlingTime"]:.4f} s',
-            f'Final Value (Peak) (Closed Loop): {result_closed["response_info"]["Peak"]:.4f}'
+            f'Tempo de subida (Malha Aberta): {result_opened["response_info"]["RiseTime"]:.4f} s',
+            f'Tempo de acomodação (Malha Aberta): {result_opened["response_info"]["SettlingTime"]:.4f} s',
+            f'Valor final (Pico) (Malha Aberta): {result_opened["response_info"]["Peak"]:.4f}\n',
+            f'Tempo de subida (Malha Fechada): {result_closed["response_info"]["RiseTime"]:.4f} s',
+            f'Tempo de acomodação (Malha Fechada): {result_closed["response_info"]["SettlingTime"]:.4f} s',
+            f'Valor final (Pico) (Malha Fechada): {result_closed["response_info"]["Peak"]:.4f}'
         ))
 
         # Position the parameter box centrally vertically and to the right horizontally
@@ -284,23 +312,23 @@ def plot_graphs_method():
 
         # Update label texts based on results
         if result_opened['response_info']['RiseTime'] < result_closed['response_info']['RiseTime']:
-            rise_time_label.configure(text='The open loop system has a shorter rise time.')
+            rise_time_label.configure(text='O sistema em MALHA ABERTA tem menor tempo de subida')
         else:
-            rise_time_label.configure(text='The closed loop system has a shorter rise time.')
+            rise_time_label.configure(text='O sistema em MALHA FECHADA tem menor tempo de subida')
 
         if result_opened['response_info']['SettlingTime'] < result_closed['response_info']['SettlingTime']:
-            settling_time_label.configure(text='The open loop system has a shorter settling time.')
+            settling_time_label.configure(text='O sistema em MALHA ABERTA tem menor tempo de acomodação')
         else:
-            settling_time_label.configure(text='The closed loop system has a shorter settling time.')
+            settling_time_label.configure(text='O sistema em MALHA FECHADA tem menor tempo de acomodação')
 
         if result_opened['response_info']['Peak'] > result_closed['response_info']['Peak']:
-            peak_label.configure(text='The open loop system has a higher final value (peak).')
+            peak_label.configure(text='O sistema em MALHA ABERTA tem maior valor final (pico)')
         else:
-            peak_label.configure(text='The closed loop system has a higher final value (peak).')
+            peak_label.configure(text='O sistema em MALHA FECHADA tem maior valor final (pico)')
 
         # Display MSE results
-        eqm_opened_label.configure(text=f'Mean Squared Error (MSE) for Open Loop: {result_opened["MSE"]:.4f}')
-        eqm_closed_label.configure(text=f'Mean Squared Error (MSE) for Closed Loop: {result_closed["MSE"]:.4f}')
+        eqm_opened_label.configure(text=f'Erro Quadrático Médio (EQM) para MALHA ABERTA: {result_opened["MSE"]:.4f}')
+        eqm_closed_label.configure(text=f'Erro Quadrático Médio (EQM) para MALHA FECHADA: {result_closed["MSE"]:.4f}')
 
 
 def plot_graphs_pid():
@@ -309,6 +337,11 @@ def plot_graphs_pid():
 
     # Check if data and result_closed are available
     if data is not None and result_closed is not None:
+
+        first_graph = None
+        second_graph = None
+        third_graph = None
+
         # Generate graphs based on the comparison result
         if comparison_result == 'Smith':
             first_graph = pid_controller(
@@ -366,10 +399,11 @@ def plot_graphs_pid():
                 selected_method_3
             )
 
+        fig1 = Figure(figsize=(3.7, 3.7), dpi=100)
+        ax1 = fig1.add_subplot(111)
+
         # Plot the first graph if it is a valid dictionary
         if isinstance(first_graph, dict):
-            fig1 = Figure(figsize=(3.7, 3.7), dpi=100)
-            ax1 = fig1.add_subplot(111)
 
             ax1.plot(first_graph['result_time'], first_graph['result_model'], 'red', label='PID')
             ax1.axvline(first_graph['response_info']['RiseTime'], color='green', linestyle='--', label='Rise Time')
@@ -399,10 +433,11 @@ def plot_graphs_pid():
 
             save_graph(fig1, 'method_1')
 
+        fig2 = Figure(figsize=(3.7, 3.7), dpi=100)
+        ax2 = fig2.add_subplot(111)
+
         # Plot the second graph if it is a valid dictionary
         if isinstance(second_graph, dict):
-            fig2 = Figure(figsize=(3.7, 3.7), dpi=100)
-            ax2 = fig2.add_subplot(111)
 
             ax2.plot(second_graph['result_time'], second_graph['result_model'], 'red', label='PID')
             ax2.axvline(second_graph['response_info']['RiseTime'], color='green', linestyle='--', label='Rise Time')
@@ -431,10 +466,11 @@ def plot_graphs_pid():
 
             save_graph(fig2, 'method_2')
 
+        fig3 = Figure(figsize=(3.7, 3.7), dpi=100)
+        ax3 = fig3.add_subplot(111)
+
         # Plot the third graph if it is a valid dictionary
         if isinstance(third_graph, dict):
-            fig3 = Figure(figsize=(3.7, 3.7), dpi=100)
-            ax3 = fig3.add_subplot(111)
 
             ax3.plot(third_graph['result_time'], third_graph['result_model'], 'red', label='PID')
             ax3.axvline(third_graph['response_info']['RiseTime'], color='green', linestyle='--', label='Rise Time')
@@ -517,16 +553,16 @@ sidebar = ctk.CTkFrame(app, width=200)
 sidebar.pack(side='right', fill='y', padx=10)
 
 # Button to switch to the initial screen
-button_to_initial = ctk.CTkButton(sidebar, text='Home Screen', command=lambda: switch_screen(frame_initial))
+button_to_initial = ctk.CTkButton(sidebar, text='Tele inicial', command=lambda: switch_screen(frame_initial))
 button_to_initial.pack(pady=10, padx=10)
 
 # Button to switch to the comparisons analysis screen
-button_to_comparisons = ctk.CTkButton(sidebar, text='Analysis - Method',
+button_to_comparisons = ctk.CTkButton(sidebar, text='Análise - Método',
                                       command=lambda: switch_screen(frame_comparisons))
 button_to_comparisons.pack(pady=10, padx=10)
 
 # Button to switch to the advanced control definition screen
-button_to_advanced = ctk.CTkButton(sidebar, text='Define Control', command=lambda: switch_screen(frame_pid))
+button_to_advanced = ctk.CTkButton(sidebar, text='Definir controle', command=lambda: switch_screen(frame_pid))
 button_to_advanced.pack(pady=10, padx=10)
 
 # Creating Frames for different screens
@@ -535,7 +571,7 @@ frame_comparisons = ctk.CTkFrame(app)
 frame_pid = ctk.CTkFrame(app)
 
 # Centralized title at the top of the application
-title_label = ctk.CTkLabel(app, text="Comparison of Identification Methods", font=("Arial", 24))
+title_label = ctk.CTkLabel(app, text="Identificação de Processos e Sintonia de Controladores PID", font=("Arial", 24))
 title_label.pack(side='top', pady=10)
 
 # Initial Screen - Button to select file and display Smith and Sundaresan graphs
@@ -543,11 +579,11 @@ arquive_frame = ctk.CTkFrame(frame_initial)
 arquive_frame.pack(pady=5, padx=20, fill='x')
 
 # Button for selecting .mat file
-button_file = ctk.CTkButton(arquive_frame, text='Select .mat file', command=select_file)
+button_file = ctk.CTkButton(arquive_frame, text='Selecione um arquivo .mat', command=select_file)
 button_file.pack(side='left', padx=10, pady=10)
 
 # Label prompting the user to select the .mat file
-label = ctk.CTkLabel(arquive_frame, text='Click the button to select the .mat file')
+label = ctk.CTkLabel(arquive_frame, text='Clique no botão para selecionar um arquivo .mat')
 label.pack(side='left', padx=10)
 
 # Frame for plots on the initial screen
@@ -564,8 +600,7 @@ frame_method_plots.pack(fill='both', expand=True, padx=20, pady=20)
 
 # Advanced Control Screen - Selection of control methods
 # PID control method options
-pid_methods = ["None", "Ziegler Nichols Open Loop", "IMC", "CHR without Overshoot", "CHR with Overshoot",
-               "Cohen and Coon", "ITAE"]
+pid_methods = ["Nenhum","Ziegler Nichols Malha Aberta","IMC","CHR sem Sobrevalor","CHR com Sobrevalor","Cohen e Coon","ITAE"]
 
 # Frame for buttons on the advanced control screen
 frame_buttons = ctk.CTkFrame(frame_pid)

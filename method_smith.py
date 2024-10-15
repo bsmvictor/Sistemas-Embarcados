@@ -52,9 +52,6 @@ def method_smith(step, time, output, k, tau, theta, mesh='Opened'):
         # Calculate the Mean Squared Error (MSE) between the model response and the actual output
         MSE = np.sqrt(np.sum((result_model - output) ** 2) / len(output))
 
-        # Print the transfer function of the estimated model for verification
-        print(result_estimated_model)
-
         # Get step response characteristics (rise time, settling time, etc.)
         response_info = ctrl.step_info(result_estimated_model)
 
