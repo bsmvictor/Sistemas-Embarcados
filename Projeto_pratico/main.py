@@ -3,8 +3,10 @@ from tkinter import filedialog
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from scipy.io import loadmat
-from Projeto_pratico.identificacao_sistemas import identificacaoSistemas
+from Projeto_pratico.method_smith import method_smith
+from Projeto_pratico.method_sundaresan import method_sundaresan
 from Projeto_pratico.pid_controller import pid_controller
+from Projeto_pratico.sys_identification import system_identification
 
 data = None
 comparison_result = None
@@ -16,6 +18,15 @@ selected_method_1 = 'Nenhum'
 selected_method_2 = 'Nenhum'
 selected_method_3 = 'Nenhum'
 
+identification_smith = None
+identification_sundaresan = None
+
+
+def save_graph(fig, nome_do_arquivo):
+    caminho = f'images/{nome_do_arquivo}.png'  # Define o caminho para salvar
+    fig.savefig(caminho)  # Salva o gráfico
+
+
 def select_file():
     global data
     path_file = filedialog.askopenfilename(title='Selecione o arquivo .mat')
@@ -25,8 +36,11 @@ def select_file():
         label.configure(text=f"Arquivo {file_name} selecionado com sucesso!")
         plot_graphs_initial()  # Gerar os gráficos dos métodos Smith e Sundaresan
 
+
 def plot_graphs_initial():
     global comparison_result
+    global identification_smith
+    global identification_sundaresan
 
     if data is not None:
         # Extraindo entrada, saída e tempo
@@ -35,18 +49,29 @@ def plot_graphs_initial():
         time = data['TARGET_DATA____ProjetoC213_Degrau'][0]  # A primeira linha é o tempo
 
         # Lógica de identificação do sistema Smith
-        results_smith = identificacaoSistemas(step, time, output, 'Smith')
-        results_sundaresan = identificacaoSistemas(step, time, output, 'Sundaresan')
+        identification_smith = system_identification(step, time, output, 'Smith')
+        identification_sundaresan = system_identification(step, time, output, 'Sundaresan')
+
+        results_smith = method_smith(step, time, output,
+                                     identification_smith['k'], identification_smith['tau'],
+                                     identification_smith['theta'])
+
+        results_sundaresan = method_sundaresan(step, time, output,
+                                               identification_sundaresan['k'], identification_sundaresan['tau'],
+                                               identification_sundaresan['theta'])
+
+        print(identification_smith)
+        print(identification_sundaresan)
 
         # Gráfico 1: Método de Smith
         fig1 = Figure(figsize=(5.5, 5), dpi=100)
         ax1 = fig1.add_subplot(111)
 
         # Plots do gráfico
-        ax1.plot(time, output, 'black', label='Resposta Real do Sistema')
+        ax1.plot(time, output, 'g', label='Resposta Real do Sistema')
         ax1.plot(time, step, label='Entrada (Degrau)', color='blue')
         ax1.plot(results_smith['result_time'], results_smith['result_model'], 'r',
-        label='Modelo Identificado (Smith) Malha Aberta')
+                 label='Modelo Identificado (Smith) Malha Aberta')
 
         # Definindo título e labels dos eixos
         ax1.set_title('Método de Smith (Malha Aberta)', fontsize=10)
@@ -61,20 +86,21 @@ def plot_graphs_initial():
         props = dict(boxstyle='round', facecolor='white', alpha=0.6)
 
         textstr = '\n'.join((
-            f'Ganho (k): {results_smith["k"]:.4f}',
-            f'Tempo de Atraso (θ): {results_smith["theta"]:.4f} s',
-            f'Constante de Tempo (τ): {results_smith["tau"]:.4f} s',
+            f'Ganho (k): {identification_smith["k"]:.4f}',
+            f'Tempo de Atraso (θ): {identification_smith["theta"]:.4f} s',
+            f'Constante de Tempo (τ): {identification_smith["tau"]:.4f} s',
             f'(EQM): {results_smith["MSE"]:.4f}'))
 
         # Posicionar a caixa de parâmetros no centro verticalmente e na direita horizontalmente
-        ax1.text(0.95, 0.5, textstr, transform=ax1.transAxes, fontsize=8, verticalalignment='center', horizontalalignment='right', bbox=props)
+        ax1.text(0.95, 0.5, textstr, transform=ax1.transAxes, fontsize=8, verticalalignment='center',
+                 horizontalalignment='right', bbox=props)
 
         # Gráfico 2: Método de Sundaresan
         fig2 = Figure(figsize=(5.5, 5), dpi=100)
         ax2 = fig2.add_subplot(111)
 
         # Plots do gráfico
-        ax2.plot(time, output, 'black', label='Resposta Real do Sistema')
+        ax2.plot(time, output, 'g', label='Resposta Real do Sistema')
         ax2.plot(time, step, label='Entrada (Degrau)', color='blue')
         ax2.plot(results_sundaresan['result_time'], results_sundaresan['result_model'], 'r',
                  label='Modelo Identificado (Sundaresan) Malha Aberta')
@@ -91,10 +117,10 @@ def plot_graphs_initial():
         # Adicionando os parâmetros identificados no gráfico em uma caixa delimitada
         props = dict(boxstyle='round', facecolor='white', alpha=0.6)
 
-        textstr = '\n'.join(( 
-            f'Ganho (k): {results_sundaresan["k"]:.4f}',
-            f'Tempo de Atraso (θ): {results_sundaresan["theta"]:.4f} s',
-            f'Constante de Tempo (τ): {results_sundaresan["tau"]:.4f} s',
+        textstr = '\n'.join((
+            f'Ganho (k): {identification_sundaresan["k"]:.4f}',
+            f'Tempo de Atraso (θ): {identification_sundaresan["theta"]:.4f} s',
+            f'Constante de Tempo (τ): {identification_sundaresan["tau"]:.4f} s',
             f'(EQM): {results_sundaresan["MSE"]:.4f}'))
 
         # Posicionar a caixa de parâmetros no centro verticalmente e na direita horizontalmente
@@ -113,6 +139,9 @@ def plot_graphs_initial():
         canvas2 = FigureCanvasTkAgg(fig2, master=frame_plots)
         canvas2.get_tk_widget().pack(side='right', padx=10)
 
+        save_graph(fig1, 'Smith_malha_aberta')
+        save_graph(fig2, 'Sundaresan_malha_aberta')
+
         # Comparação dos EQMs
         if results_smith['MSE'] < results_sundaresan['MSE']:
             comparison_result = 'Smith'
@@ -125,26 +154,46 @@ def plot_graphs_initial():
 
         plot_graphs_method()
 
+
 def plot_graphs_method():
     global comparison_result
+
+    global identification_smith
+    global identification_sundaresan
+
     global result_closed
     global result_opened
 
     if data is not None and comparison_result is not None:
-        
+
         # Extraindo entrada, saída e tempo
         step = data['TARGET_DATA____ProjetoC213_Degrau'][1]  # A segunda linha é a entrada
         output = data['TARGET_DATA____ProjetoC213_PotenciaMotor'][1]  # A segunda linha é a saída
         time = data['TARGET_DATA____ProjetoC213_Degrau'][0]  # A primeira linha é o tempo
 
-        result_opened = identificacaoSistemas(step, time, output, comparison_result, 'Opened')
-        result_closed = identificacaoSistemas(step, time, output, comparison_result, 'Closed')
+        if comparison_result == 'Smith':
+            result_opened = method_smith(step, time, output,
+                                         identification_smith['k'], identification_smith['tau'],
+                                         identification_smith['theta'], 'Opened')
+            result_closed = method_smith(step, time, output,
+                                         identification_smith['k'], identification_smith['tau'],
+                                         identification_smith['theta'], 'Closed')
+
+        if (comparison_result == 'Sundaresan'):
+            result_opened = method_sundaresan(step, time, output,
+                                              identification_sundaresan['k'], identification_sundaresan['tau'],
+                                              identification_sundaresan['theta'], 'Opened')
+            result_closed = method_sundaresan(step, time, output,
+                                              identification_sundaresan['k'], identification_sundaresan['tau'],
+                                              identification_sundaresan['theta'], 'Closed')
 
         fig = Figure(figsize=(8, 4), dpi=100)
         ax = fig.add_subplot(111)
 
-        ax.plot(result_opened['result_time'], result_opened['result_model'], 'r', label=f'Modelo Identificado {comparison_result} Malha Aberta')
-        ax.plot(result_closed['result_time'], result_closed['result_model'], 'b', label=f'Modelo Identificado {comparison_result} Malha Fechada')
+        ax.plot(result_opened['result_time'], result_opened['result_model'], 'r',
+                label=f'Modelo Identificado {comparison_result} Malha Aberta')
+        ax.plot(result_closed['result_time'], result_closed['result_model'], 'b',
+                label=f'Modelo Identificado {comparison_result} Malha Fechada')
 
         # Definindo título e labels dos eixos
         ax.set_title(f'Comparação entre Malha Aberta e Fechada ({comparison_result})', fontsize=10)
@@ -167,7 +216,8 @@ def plot_graphs_method():
             f'Valor final(pico) (Malha Fechada): {result_closed['response_info']['Peak']:.4f}'))
 
         # Posicionar a caixa de parâmetros no centro verticalmente e na direita horizontalmente
-        ax.text(0.95, 0.5, textstr, transform=ax.transAxes, fontsize=8, verticalalignment='center', horizontalalignment='right', bbox=props)
+        ax.text(0.95, 0.5, textstr, transform=ax.transAxes, fontsize=8, verticalalignment='center',
+                horizontalalignment='right', bbox=props)
 
         # Limpar gráficos anteriores
         for widget in frame_method_plots.winfo_children():
@@ -177,8 +227,9 @@ def plot_graphs_method():
         canvas = FigureCanvasTkAgg(fig, master=frame_method_plots)
         canvas.get_tk_widget().pack(fill='both', expand=True, padx=10)
 
+        save_graph(fig, f'comparacao_aberta_fechada')
+
         # Comparação entre os sistemas em malha aberta e fechada
-        print('\nComparação entre Resposta do Sistema em Malha Aberta e Fechada:\n')
 
         if result_opened['response_info']['RiseTime'] < result_closed['response_info']['RiseTime']:
             rise_time_label.configure(text='O sistema em malha aberta tem menor tempo de subida.', font=("Arial", 16))
@@ -186,9 +237,11 @@ def plot_graphs_method():
             rise_time_label.configure(text='O sistema em malha fechada tem menor tempo de subida.', font=("Arial", 16))
 
         if result_opened['response_info']['SettlingTime'] < result_closed['response_info']['SettlingTime']:
-            settling_time_label.configure(text='O sistema em malha aberta tem menor tempo de acomodação.', font=("Arial", 16))
+            settling_time_label.configure(text='O sistema em malha aberta tem menor tempo de acomodação.',
+                                          font=("Arial", 16))
         else:
-            settling_time_label.configure(text='O sistema em malha fechada tem menor tempo de acomodação.', font=("Arial", 16))
+            settling_time_label.configure(text='O sistema em malha fechada tem menor tempo de acomodação.',
+                                          font=("Arial", 16))
 
         if result_opened['response_info']['Peak'] > result_closed['response_info']['Peak']:
             peak_label.configure(text='O sistema em malha aberta tem maior valor final (pico).', font=("Arial", 16))
@@ -196,22 +249,38 @@ def plot_graphs_method():
             peak_label.configure(text='O sistema em malha aberta tem maior valor final (pico).', font=("Arial", 16))
 
         # Exibindo os resultados
-        eqm_opened_label.configure(text=f'\nErro Quadrático Médio (EQM) para Malha Aberta: {result_opened['MSE']:.4f}', font=("Arial", 16))
-        eqm_closed_label.configure(text=f'\nErro Quadrático Médio (EQM) para Malha Fechada: {result_closed['MSE']:.4f}', font=("Arial", 16))
+        eqm_opened_label.configure(text=f'\nErro Quadrático Médio (EQM) para Malha Aberta: {result_opened['MSE']:.4f}',
+                                   font=("Arial", 16))
+        eqm_closed_label.configure(text=f'\nErro Quadrático Médio (EQM) para Malha Fechada: {result_closed['MSE']:.4f}',
+                                   font=("Arial", 16))
+
 
 def plot_graphs_pid():
     global result_closed
     global result_opened
 
     if data is not None and result_closed is not None:
-        # Extraindo entrada, saída e tempo
-        step = data['TARGET_DATA____ProjetoC213_Degrau'][1]  # A segunda linha é a entrada
-        output = data['TARGET_DATA____ProjetoC213_PotenciaMotor'][1]  # A segunda linha é a saída
-        time = data['TARGET_DATA____ProjetoC213_Degrau'][0]  # A primeira linha é o tempo
 
-        first_graph = pid_controller(result_closed['k'], result_closed['tau'], result_closed['theta'], result_closed['result_estimated_model'], selected_method_1)
-        second_graph = pid_controller(result_closed['k'], result_closed['tau'], result_closed['theta'], result_closed['result_estimated_model'], selected_method_2)
-        third_graph = pid_controller(result_closed['k'], result_closed['tau'], result_closed['theta'], result_closed['result_estimated_model'], selected_method_3)
+        if comparison_result == 'Smith':
+            first_graph = pid_controller(identification_smith['k'], identification_smith['tau'], identification_smith['theta'],
+                                         result_opened['result_estimated_model'], result_opened['step_amp'], selected_method_1)
+
+            second_graph = pid_controller(identification_smith['k'], identification_smith['tau'], identification_smith['theta'],
+                                          result_opened['result_estimated_model'], result_opened['step_amp'], selected_method_2)
+
+            third_graph = pid_controller(identification_smith['k'], identification_smith['tau'], identification_smith['theta'],
+                                         result_opened['result_estimated_model'], result_opened['step_amp'], selected_method_3)
+
+        if comparison_result == 'Sundaresan':
+            first_graph = pid_controller(identification_sundaresan['k'], identification_sundaresan['tau'], identification_sundaresan['theta'],
+                                         result_opened['result_estimated_model'], result_opened['step_amp'], selected_method_1)
+
+            second_graph = pid_controller(identification_sundaresan['k'], identification_sundaresan['tau'], identification_sundaresan['theta'],
+                                          result_opened['result_estimated_model'], result_opened['step_amp'], selected_method_2)
+
+            third_graph = pid_controller(identification_sundaresan['k'], identification_sundaresan['tau'], identification_sundaresan['theta'],
+                                         result_opened['result_estimated_model'], result_opened['step_amp'], selected_method_3)
+
 
         if isinstance(first_graph, dict):
             # Gráfico 1:
@@ -219,10 +288,15 @@ def plot_graphs_pid():
             ax1 = fig1.add_subplot(111)
 
             ax1.plot(first_graph['result_time'], first_graph['result_model'], 'red', label='PID')
-            ax1.axvline(first_graph['response_info']['RiseTime'], color='green', linestyle='--', label='Tempo de Subida')
-            ax1.axvline(first_graph['response_info']['SettlingTime'], color='purple', linestyle='--', label='Tempo de Acomodação')
-            ax1.text(first_graph['response_info']['RiseTime'], 0.9 * result_closed['set_point'], f'Tempo de Subida: {first_graph['response_info']['RiseTime']:.2f}s', color='green', fontsize=10)
-            ax1.text(first_graph['response_info']['SettlingTime'], 0.8 * result_closed['set_point'], f'Tempo de Acomodação: {first_graph['response_info']['SettlingTime']:.2f}s', color='purple', fontsize=10)
+            ax1.axvline(first_graph['response_info']['RiseTime'], color='green', linestyle='--',
+                        label='Tempo de Subida')
+            ax1.axvline(first_graph['response_info']['SettlingTime'], color='purple', linestyle='--',
+                        label='Tempo de Acomodação')
+            ax1.text(first_graph['response_info']['RiseTime'], 0.9 * result_opened['step_amp'],
+                     f'Tempo de Subida: {first_graph['response_info']['RiseTime']:.2f}s', color='green', fontsize=10)
+            ax1.text(first_graph['response_info']['SettlingTime'], 0.8 * result_opened['step_amp'],
+                     f'Tempo de Acomodação: {first_graph['response_info']['SettlingTime']:.2f}s', color='purple',
+                     fontsize=10)
             ax1.set_title(first_graph['title'], fontsize=10)
             ax1.set_xlabel('Tempo (s)')
             ax1.set_ylabel('Potência do Motor')
@@ -239,7 +313,10 @@ def plot_graphs_pid():
                 f"valor de pico: {first_graph['response_info']['Peak']:.4f}"))
 
             # Posicionar a caixa com os resultados no gráfico
-            ax1.text(0.95, 0.5, textstr, transform=ax1.transAxes, fontsize=8, verticalalignment='center',horizontalalignment='right', bbox=props)
+            ax1.text(0.95, 0.5, textstr, transform=ax1.transAxes, fontsize=8, verticalalignment='center',
+                     horizontalalignment='right', bbox=props)
+
+            save_graph(fig1, 'metodo_1')
 
         if isinstance(second_graph, dict):
             # Gráfico 2:
@@ -247,10 +324,15 @@ def plot_graphs_pid():
             ax2 = fig2.add_subplot(111)
 
             ax2.plot(second_graph['result_time'], second_graph['result_model'], 'red', label='PID')
-            ax2.axvline(second_graph['response_info']['RiseTime'], color='green', linestyle='--', label='Tempo de Subida')
-            ax2.axvline(second_graph['response_info']['SettlingTime'], color='purple', linestyle='--', label='Tempo de Acomodação')
-            ax2.text(second_graph['response_info']['RiseTime'], 0.9 * result_closed['set_point'],f'Tempo de Subida: {second_graph['response_info']['RiseTime']:.2f}s', color='green', fontsize=10)
-            ax2.text(second_graph['response_info']['SettlingTime'], 0.8 * result_closed['set_point'],f'Tempo de Acomodação: {second_graph['response_info']['SettlingTime']:.2f}s', color='purple', fontsize=10)
+            ax2.axvline(second_graph['response_info']['RiseTime'], color='green', linestyle='--',
+                        label='Tempo de Subida')
+            ax2.axvline(second_graph['response_info']['SettlingTime'], color='purple', linestyle='--',
+                        label='Tempo de Acomodação')
+            ax2.text(second_graph['response_info']['RiseTime'], 0.9 * result_opened['step_amp'],
+                     f'Tempo de Subida: {second_graph['response_info']['RiseTime']:.2f}s', color='green', fontsize=10)
+            ax2.text(second_graph['response_info']['SettlingTime'], 0.8 * result_opened['step_amp'],
+                     f'Tempo de Acomodação: {second_graph['response_info']['SettlingTime']:.2f}s', color='purple',
+                     fontsize=10)
             ax2.set_title(second_graph['title'], fontsize=10)
             ax2.set_xlabel('Tempo (s)')
             ax2.set_ylabel('Potência do Motor')
@@ -270,18 +352,23 @@ def plot_graphs_pid():
             ax2.text(0.95, 0.5, textstr, transform=ax2.transAxes, fontsize=8, verticalalignment='center',
                      horizontalalignment='right', bbox=props)
 
+            save_graph(fig2, 'metodo_2')
+
         if isinstance(third_graph, dict):
             # Gráfico 3:
             fig3 = Figure(figsize=(3.7, 3.7), dpi=100)
             ax3 = fig3.add_subplot(111)
 
             ax3.plot(third_graph['result_time'], third_graph['result_model'], 'red', label='PID')
-            ax3.axvline(third_graph['response_info']['RiseTime'], color='green', linestyle='--', label='Tempo de Subida')
-            ax3.axvline(third_graph['response_info']['SettlingTime'], color='purple', linestyle='--', label='Tempo de Acomodação')
-            ax3.text(third_graph['response_info']['RiseTime'], 0.9 * result_closed['set_point'],
+            ax3.axvline(third_graph['response_info']['RiseTime'], color='green', linestyle='--',
+                        label='Tempo de Subida')
+            ax3.axvline(third_graph['response_info']['SettlingTime'], color='purple', linestyle='--',
+                        label='Tempo de Acomodação')
+            ax3.text(third_graph['response_info']['RiseTime'], 0.9 * result_opened['step_amp'],
                      f'Tempo de Subida: {third_graph['response_info']['RiseTime']:.2f}s', color='green', fontsize=10)
-            ax3.text(third_graph['response_info']['SettlingTime'], 0.8 * result_closed['set_point'],
-                     f'Tempo de Acomodação: {third_graph['response_info']['SettlingTime']:.2f}s', color='purple', fontsize=10)
+            ax3.text(third_graph['response_info']['SettlingTime'], 0.8 * result_opened['step_amp'],
+                     f'Tempo de Acomodação: {third_graph['response_info']['SettlingTime']:.2f}s', color='purple',
+                     fontsize=10)
             ax3.set_title(third_graph['title'], fontsize=10)
             ax3.set_xlabel('Tempo (s)')
             ax3.set_ylabel('Potência do Motor')
@@ -301,7 +388,7 @@ def plot_graphs_pid():
             ax3.text(0.95, 0.5, textstr, transform=ax3.transAxes, fontsize=8, verticalalignment='center',
                      horizontalalignment='right', bbox=props)
 
-
+            save_graph(fig3, 'metodo_3')
 
         for widget in frame_pid_plots.winfo_children():
             widget.destroy()
@@ -315,21 +402,27 @@ def plot_graphs_pid():
         canvas3 = FigureCanvasTkAgg(fig3, master=frame_pid_plots)
         canvas3.get_tk_widget().pack(side='left', padx=10)
 
+
+
+
 # Função para processar a escolha do método PID
 def select_pid_method_1(value):
     global selected_method_1
     selected_method_1 = value
     print(f"Método PID selecionado para o primeiro campo: {value}")
 
+
 def select_pid_method_2(value):
     global selected_method_2
     selected_method_2 = value
     print(f"Método PID selecionado para o segundo campo: {value}")
 
+
 def select_pid_method_3(value):
     global selected_method_3
     selected_method_3 = value
     print(f"Método PID selecionado para o terceiro campo: {value}")
+
 
 def switch_screen(screen):
     frame_initial.pack_forget()
@@ -350,7 +443,8 @@ sidebar.pack(side='right', fill='y', padx=10)
 button_to_initial = ctk.CTkButton(sidebar, text='Tela Inicial', command=lambda: switch_screen(frame_initial))
 button_to_initial.pack(pady=10, padx=10)
 
-button_to_comparisons = ctk.CTkButton(sidebar, text='Análise - Método', command=lambda: switch_screen(frame_comparisons))
+button_to_comparisons = ctk.CTkButton(sidebar, text='Análise - Método',
+                                      command=lambda: switch_screen(frame_comparisons))
 button_to_comparisons.pack(pady=10, padx=10)
 
 button_to_advanced = ctk.CTkButton(sidebar, text='Definir Controle', command=lambda: switch_screen(frame_pid))
@@ -403,14 +497,15 @@ eqm_closed_label.pack(side='top')
 
 # Tela de Controle Avançado - Seleção de métodos de controle
 # Opções de métodos de controle PID
-pid_methods = ["Nenhum","Ziegler Nichols Malha Aberta", "IMC", "CHR sem Sobrevalor", "CHR com Sobrevalor", "Cohen e Coon", "ITAE"]
+pid_methods = ["Nenhum", "Ziegler Nichols Malha Aberta", "IMC", "CHR sem Sobrevalor", "CHR com Sobrevalor",
+               "Cohen e Coon", "ITAE"]
 
 frame_buttons = ctk.CTkFrame(frame_pid)
 frame_buttons.pack(pady=10, padx=5)
 
 # Primeiro campo de seleção
 option_menu_1 = ctk.CTkOptionMenu(frame_buttons, values=pid_methods, command=select_pid_method_1)
-option_menu_1.pack(pady=5, padx=5 ,side='left')
+option_menu_1.pack(pady=5, padx=5, side='left')
 
 # Segundo campo de seleção
 option_menu_2 = ctk.CTkOptionMenu(frame_buttons, values=pid_methods, command=select_pid_method_2)

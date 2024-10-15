@@ -2,7 +2,7 @@ import control as ctrl
 from matplotlib import pyplot as plt
 
 
-def pid_controller (k, tau, theta, result_model, pid = 'Nenhum'):
+def pid_controller (k, tau, theta, result_estimated_model, step_amp ,pid = 'Nenhum'):
     '''
        Identifies control systems using the Smith or Sundaresan methods based on
        test data, considering a first-order model with transport delay (FOPDT).
@@ -33,7 +33,7 @@ def pid_controller (k, tau, theta, result_model, pid = 'Nenhum'):
         PID = funcao_PID(kp, ti, td)
 
         # Sistema em malha fechada com controlador PID e modelo identificado
-        system_closed_mesh = ctrl.feedback(ctrl.series(PID, result_model))
+        system_closed_mesh = ctrl.feedback(ctrl.series(PID, result_estimated_model))
 
         # Simulação da resposta ao degrau
         result_time, result_model = ctrl.step_response(system_closed_mesh)
@@ -52,7 +52,7 @@ def pid_controller (k, tau, theta, result_model, pid = 'Nenhum'):
 
     if pid == 'IMC':
         # Calculando os valores de kp, ti e td
-        lamb = 20  # lambda tem que ser maior que 10.2 (lamb/theta > 0.8)
+        lamb = 20
         kp = ((2 * tau) + theta) / (k * ((2 * lamb) + theta))
         ti = tau + (theta / 2)
         td = (tau * theta) / ((2 * tau) + theta)
@@ -65,14 +65,14 @@ def pid_controller (k, tau, theta, result_model, pid = 'Nenhum'):
         PID = function_pid(kp, ti, td)
 
         # Sistema em malha fechada com controlador PID e modelo identificado
-        system_closed_mesh = ctrl.feedback(ctrl.series(PID, result_model))
+        system_closed_mesh = ctrl.feedback(ctrl.series(PID, result_estimated_model))
 
         # Simulação da resposta ao degrau
         result_time, result_model = ctrl.step_response(system_closed_mesh)
 
         response_info = ctrl.step_info(system_closed_mesh)
 
-        title = 'IMC\n Sistema lento, com overshoot (ts elevado)'
+        title = 'IMC\n Sistema lento, sem overshoot (ts elevado)'
 
         return {
             'result_time': result_time,
@@ -95,7 +95,7 @@ def pid_controller (k, tau, theta, result_model, pid = 'Nenhum'):
         PID = funcao_PID(kp, ti, td)
 
         # Sistema em malha fechada com controlador PID e modelo identificado
-        system_closed_mesh = ctrl.feedback(ctrl.series(PID, result_model))
+        system_closed_mesh = ctrl.feedback(ctrl.series(PID, result_estimated_model))
 
         # Simulação da resposta ao degrau
         result_time, result_model = ctrl.step_response(system_closed_mesh)
@@ -125,7 +125,7 @@ def pid_controller (k, tau, theta, result_model, pid = 'Nenhum'):
         PID = funcao_PID(kp, ti, td)
 
         # Sistema em malha fechada com controlador PID e modelo identificado
-        system_closed_mesh = ctrl.feedback(ctrl.series(PID, result_model))
+        system_closed_mesh = ctrl.feedback(ctrl.series(PID, result_estimated_model))
 
         # Simulação da resposta ao degrau
         result_time, result_model = ctrl.step_response(system_closed_mesh)
@@ -154,7 +154,7 @@ def pid_controller (k, tau, theta, result_model, pid = 'Nenhum'):
         PID = funcao_PID(kp, ti, td)
 
         # Sistema em malha fechada com controlador PID e modelo identificado
-        system_closed_mesh = ctrl.feedback(ctrl.series(PID, result_model))
+        system_closed_mesh = ctrl.feedback(ctrl.series(PID, result_estimated_model))
 
         # Simulação da resposta ao degrau
         result_time, result_model = ctrl.step_response(system_closed_mesh)
@@ -190,7 +190,7 @@ def pid_controller (k, tau, theta, result_model, pid = 'Nenhum'):
         PID = funcao_PID(kp, ti, td)
 
         # Sistema em malha fechada com controlador PID e modelo identificado
-        system_closed_mesh = ctrl.feedback(ctrl.series(PID, result_model))
+        system_closed_mesh = ctrl.feedback(ctrl.series(PID, result_estimated_model))
 
         # Simulação da resposta ao degrau
         result_time, result_model = ctrl.step_response(system_closed_mesh)
