@@ -8,6 +8,9 @@ O principal desafio é o atraso de propagação dos sinais de controle, que pode
  - Victor Boaventura - 1807 - GEC
  - Yves Ribeiro - 1792 - GEC
 
+### Apresentação
+ - [Apresentação do Projeto no Canva](https://www.canva.com/design/DAGTozfYnQ0/Z9tM-6qwCS-rr5cnVUf83w/edit?utm_content=DAGTozfYnQ0&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
+
 ## Pré requisitos 
 Para efetivamente executar o projeto, é necessário instalar algumas bibliotecas em python.
 
